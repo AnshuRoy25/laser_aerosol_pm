@@ -1,7 +1,29 @@
 \.venv
 miniconda.sh
 
-\docs
+\mini_lidar_sim\docs
 \venv
+\mini_lidar_web\.vercel
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+.DS_Store
+.idea/
+.vscode/
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+*.tar.gz
+*.zip
+*.bak
+*.tmp
+*.swp
+*.swo   
 
 
