@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini-LIDAR — Multi-Wavelength Aerosol Sensor | NIT Hamirpur</title>
+<meta name="description" content="Laser-based low-cost aerosol sensor with multi-wavelength Mie scattering and ML calibration for PM2.5/PM10 measurement. B.Tech Major Project, NIT Hamirpur.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Lexend:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   MINI-LIDAR RESEARCH SITE — "Optical Observatory" Theme
+   Deep ink + warm amber laser lines + cream data panels
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --ink:        #060e1a;
+  --ink-mid:    #0d1b2e;
+  --ink-light:  #132742;
+  --slate:      #1e3a5f;
+  --steel:      #7b9ab8;
+  --cream:      #f5f0e8;
+  --cream-dim:  #e8e0d0;
+  --amber:      #e8a830;
+  --amber-glow: #f0b840;
+  --laser-blue: #38a0e8;
+  --laser-green:#42c878;
+  --laser-red:  #e85038;
+  --teal:       #2e86ab;
+  --success:    #3b9979;
+  --warn:       #c73e1d;
+  --text:       #c8d6e5;
+  --text-dim:   #7b90a8;
+  --panel:      rgba(13,27,46,0.85);
+  --glass:      rgba(255,255,255,0.04);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Lexend', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Consolas', monospace;
+
+  --max-w:   1180px;
+  --gutter:  clamp(1.2rem, 4vw, 3rem);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.72;
+  color: var(--text);
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Background atmosphere ─────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(46,134,171,0.06), transparent),
+    radial-gradient(ellipse 50% 50% at 80% 80%, rgba(232,168,48,0.04), transparent),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(6,14,26,0.9), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+::selection { background: var(--amber); color: var(--ink); }
+
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--amber-glow); }
+
+img { max-width: 100%; height: auto; display: block; }
+
+/* ── Navigation ────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(6,14,26,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(232,168,48,0.12);
+  transition: box-shadow 0.3s;
+}
+nav.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+
+nav .nav-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+nav .logo {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+}
+nav .logo span { color: var(--amber); }
+
+nav .nav-links {
+  display: flex; gap: 0;
+  list-style: none;
+}
+nav .nav-links a {
+  display: block;
+  padding: 0.5rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--steel);
+  transition: color 0.2s, background 0.2s;
+  border-radius: 4px;
+}
+nav .nav-links a:hover,
+nav .nav-links a.active {
+  color: var(--amber);
+  background: rgba(232,168,48,0.06);
+}
+
+.hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer; padding: 8px;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--cream); margin: 5px 0; transition: 0.3s;
+}
+
+/* ── Hero ──────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px var(--gutter) 80px;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 800px; height: 800px;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(56,160,232,0.06) 30deg,
+    transparent 60deg,
+    rgba(66,200,120,0.06) 120deg,
+    transparent 150deg,
+    rgba(232,80,56,0.06) 210deg,
+    transparent 240deg,
+    rgba(232,168,48,0.04) 300deg,
+    transparent 360deg
+  );
+  border-radius: 50%;
+  animation: heroRotate 40s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes heroRotate {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Laser lines decoration */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  width: 1px; height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(232,168,48,0.15) 30%,
+    rgba(232,168,48,0.03) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.hero-content { position: relative; z-index: 2; max-width: 860px; }
+
+.hero .institution {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--steel);
+  margin-bottom: 1.8rem;
+  opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 6vw, 4.4rem);
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--cream);
+  margin-bottom: 0.6rem;
+  opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+}
+
+.hero .subtitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.55rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--amber);
+  margin-bottom: 2.2rem;
+  opacity: 0; animation: fadeUp 0.8s 0.6s forwards;
+}
+
+.hero .tagline {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  opacity: 0; animation: fadeUp 0.8s 0.8s forwards;
+}
+
+/* Wavelength badges */
+.wavelength-badges {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-bottom: 2.5rem;
+  opacity: 0; animation: fadeUp 0.8s 1s forwards;
+}
+.wl-badge {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+.wl-badge.blue  { color: var(--laser-blue); border-color: rgba(56,160,232,0.3); background: rgba(56,160,232,0.06); }
+.wl-badge.green { color: var(--laser-green); border-color: rgba(66,200,120,0.3); background: rgba(66,200,120,0.06); }
+.wl-badge.red   { color: var(--laser-red); border-color: rgba(232,80,56,0.3); background: rgba(232,80,56,0.06); }
+
+.wl-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+.wl-badge.blue .wl-dot  { background: var(--laser-blue); box-shadow: 0 0 8px var(--laser-blue); }
+.wl-badge.green .wl-dot { background: var(--laser-green); box-shadow: 0 0 8px var(--laser-green); animation-delay: 0.3s; }
+.wl-badge.red .wl-dot   { background: var(--laser-red); box-shadow: 0 0 8px var(--laser-red); animation-delay: 0.6s; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.hero .scroll-hint {
+  opacity: 0; animation: fadeUp 0.8s 1.2s forwards;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.hero .scroll-hint::after {
+  content: '';
+  display: block;
+  width: 1px; height: 40px;
+  background: linear-gradient(var(--amber), transparent);
+  margin: 0.8rem auto 0;
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; height: 40px; }
+  50% { opacity: 0.8; height: 55px; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Sections ──────────────────────────────────────────────── */
+section {
+  position: relative;
+  z-index: 1;
+  padding: 5rem var(--gutter);
+}
+
+.container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 0.6rem;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.18;
+  margin-bottom: 1.5rem;
+}
+
+.section-desc {
+  font-size: 1.02rem;
+  color: var(--text-dim);
+  max-width: 700px;
+  margin-bottom: 3rem;
+}
+
+/* Alternating section backgrounds */
+section:nth-child(even) {
+  background: linear-gradient(180deg, var(--ink-mid) 0%, var(--ink) 100%);
+}
+
+/* ── Abstract Panel ────────────────────────────────────────── */
+.abstract-panel {
+  background: linear-gradient(135deg, var(--ink-light), var(--ink-mid));
+  border: 1px solid rgba(232,168,48,0.1);
+  border-left: 3px solid var(--amber);
+  border-radius: 0 8px 8px 0;
+  padding: 2.2rem 2.5rem;
+  margin-bottom: 2rem;
+  font-size: 0.97rem;
+  line-height: 1.85;
+}
+
+.abstract-panel p + p { margin-top: 1rem; }
+
+.keywords {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.85rem;
+}
+.keywords strong { color: var(--amber); font-weight: 500; }
+.keywords span {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  margin: 0.2rem 0.25rem;
+  background: rgba(46,134,171,0.1);
+  border: 1px solid rgba(46,134,171,0.15);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--teal);
+}
+
+/* ── Metric cards ──────────────────────────────────────────── */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.2rem;
+  margin: 2.5rem 0;
+}
+
+.metric-card {
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.metric-card:hover {
+  border-color: rgba(232,168,48,0.2);
+  transform: translateY(-2px);
+}
+
+.metric-card .value {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--amber);
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.metric-card .label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+}
+
+/* ── Figure display ────────────────────────────────────────── */
+.figure {
+  margin: 2.5rem 0;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.figure:hover { border-color: rgba(232,168,48,0.15); }
+
+.figure img {
+  width: 100%;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 0.4s;
+}
+
+.figure figcaption {
+  padding: 1rem 1.5rem;
+  background: var(--ink-mid);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.figure figcaption strong {
+  color: var(--cream);
+  font-weight: 500;
+}
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Data tables ───────────────────────────────────────────── */
+.data-table-wrap {
+  overflow-x: auto;
+  margin: 2rem 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+thead {
+  background: var(--ink-light);
+}
+
+th {
+  padding: 0.9rem 1.2rem;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-bottom: 2px solid rgba(232,168,48,0.2);
+}
+
+td {
+  padding: 0.75rem 1.2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+}
+
+tbody tr:hover {
+  background: rgba(232,168,48,0.03);
+}
+
+td.highlight {
+  color: var(--amber);
+  font-weight: 500;
+}
+
+/* ── System architecture diagram ───────────────────────────── */
+.arch-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 2.5rem 0;
+}
+
+.arch-block {
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 1.4rem;
+  position: relative;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.arch-block:hover {
+  border-color: var(--amber);
+  transform: translateY(-3px);
+}
+
+.arch-block .arch-icon {
+  font-size: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.arch-block h4 {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--cream);
+  margin-bottom: 0.3rem;
+}
+
+.arch-block p {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Arrow connectors */
+.arch-block::after {
+  content: '→';
+  position: absolute;
+  right: -0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--amber);
+  font-size: 1.1rem;
+  opacity: 0.5;
+}
+.arch-block:last-child::after { display: none; }
+
+/* ── Prose content ─────────────────────────────────────────── */
+.prose {
+  font-size: 0.97rem;
+  line-height: 1.82;
+  color: var(--text);
+  max-width: 780px;
+}
+.prose p + p { margin-top: 1.1rem; }
+.prose strong { color: var(--cream); font-weight: 500; }
+.prose em { color: var(--amber); font-style: italic; }
+
+.prose h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--cream);
+  margin: 2.5rem 0 0.8rem;
+}
+
+/* ── Team section ──────────────────────────────────────────── */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.team-card {
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 1.8rem;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+.team-card:hover { border-color: rgba(232,168,48,0.2); }
+
+.team-card .avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--amber));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.team-card .name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--cream);
+  margin-bottom: 0.25rem;
+}
+
+.team-card .role {
+  font-size: 0.78rem;
+  color: var(--amber);
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+}
+
+.team-card .dept {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid rgba(232,168,48,0.1);
+  padding: 3rem var(--gutter) 2rem;
+  text-align: center;
+}
+
+footer .footer-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+footer .footer-brand {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+
+footer a { color: var(--amber); }
+
+/* ── Lightbox ──────────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  padding: 2rem;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 95vw;
+  max-height: 90vh;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* ── Scroll reveal ─────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  nav .nav-links { display: none; }
+  .hamburger { display: block; }
+  nav .nav-links.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 64px; left: 0; right: 0;
+    background: rgba(6,14,26,0.97);
+    border-bottom: 1px solid rgba(232,168,48,0.12);
+    padding: 1rem;
+  }
+  .figure-grid { grid-template-columns: 1fr; }
+  .wavelength-badges { flex-wrap: wrap; justify-content: center; }
+  .arch-block::after { display: none; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ NAVIGATION ═══════════════════════════════════════════ -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="logo">Mini<span>-LIDAR</span></div>
+    <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links">
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#design">Design</a></li>
+      <li><a href="#physics">Physics</a></li>
+      <li><a href="#aerosol">Aerosol</a></li>
+      <li><a href="#humidity">Humidity</a></li>
+      <li><a href="#sensor">Sensor</a></li>
+      <li><a href="#ml">ML Results</a></li>
+      <li><a href="#team">Team</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-content">
+    <p class="institution">National Institute of Technology, Hamirpur &middot; Department of Physics</p>
+    <h1>Laser-Based Low-Cost<br>Aerosol / PM Sensor</h1>
+    <p class="subtitle">Multi-Wavelength Optical Scattering with AI-Based Calibration</p>
+    <p class="tagline">
+      A B.Tech Major Project combining Mie scattering physics, embedded electronics,
+      and machine learning for accurate, affordable PM2.5/PM10 air quality monitoring.
+    </p>
+    <div class="wavelength-badges">
+      <div class="wl-badge blue"><div class="wl-dot"></div> 450 nm</div>
+      <div class="wl-badge green"><div class="wl-dot"></div> 532 nm</div>
+      <div class="wl-badge red"><div class="wl-dot"></div> 650 nm</div>
+    </div>
+    <p class="scroll-hint">Scroll to explore</p>
+  </div>
+</section>
+
+<!-- ═══ ABSTRACT ═════════════════════════════════════════════ -->
+<section id="abstract">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 01</p>
+      <h2 class="section-title">Abstract</h2>
+    </div>
+
+    <div class="abstract-panel reveal">
+      <p>This work presents the design, simulation, and validation of a novel low-cost aerosol sensor employing multi-wavelength laser scattering (450 nm, 532 nm, 650 nm) at multiple detection angles (30°, 60°, 90°) combined with machine learning calibration for PM2.5 and PM10 mass concentration prediction.</p>
+      <p>By leveraging Mie scattering theory, &kappa;-Köhler hygroscopic growth modelling, and a physics-informed feature engineering pipeline producing 34 features from 9 optical channels plus environmental sensors, the system achieves accuracy significantly exceeding single-channel commercial sensors. Random Forest and XGBoost models trained on synthetic data demonstrate effective humidity compensation, reducing RH-induced measurement bias across all conditions.</p>
+      <p>The complete simulation framework — from particle physics through sensor electronics to ML inference — validates the feasibility of the multi-wavelength, multi-angle architecture at a hardware cost of $80–$120, enabling dense deployment for high-spatial-resolution air quality monitoring.</p>
+      <div class="keywords">
+        <strong>Keywords:</strong>
+        <span>Mie Scattering</span>
+        <span>PM2.5</span>
+        <span>PM10</span>
+        <span>Multi-Wavelength</span>
+        <span>Machine Learning</span>
+        <span>Hygroscopic Growth</span>
+        <span>Low-Cost Sensor</span>
+        <span>LIDAR</span>
+        <span>IoT</span>
+      </div>
+    </div>
+
+    <div class="metrics-row reveal">
+      <div class="metric-card">
+        <div class="value">3&lambda;</div>
+        <div class="label">Laser Wavelengths</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">3&theta;</div>
+        <div class="label">Detection Angles</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">34</div>
+        <div class="label">Engineered Features</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">$80–120</div>
+        <div class="label">Hardware Cost</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">&lt;10 ms</div>
+        <div class="label">Edge Inference</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SYSTEM DESIGN ════════════════════════════════════════ -->
+<section id="design">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 02</p>
+      <h2 class="section-title">System Architecture</h2>
+      <p class="section-desc">Six integrated subsystems form the Mini-LIDAR sensing pipeline, from photon interaction to cloud-connected PM prediction.</p>
+    </div>
+
+    <div class="arch-flow reveal">
+      <div class="arch-block">
+        <div class="arch-icon">🔴🟢🔵</div>
+        <h4>Laser Module</h4>
+        <p>3 diodes at 450, 532, 650 nm, 5 mW CW each, Class 3R safety.</p>
+      </div>
+      <div class="arch-block">
+        <div class="arch-icon">🌫️</div>
+        <h4>Scattering Chamber</h4>
+        <p>Black anodised aluminium, 40 mm ID, 0.3 L/min controlled airflow.</p>
+      </div>
+      <div class="arch-block">
+        <div class="arch-icon">📡</div>
+        <h4>Detector Array</h4>
+        <p>BPW34 photodiodes at 30°, 60°, 90° with collimating tubes.</p>
+      </div>
+      <div class="arch-block">
+        <div class="arch-icon">⚡</div>
+        <h4>Signal Chain</h4>
+        <p>OPA381 TIA (10 MΩ) → ADS1115 16-bit ADC → CD4051 MUX.</p>
+      </div>
+      <div class="arch-block">
+        <div class="arch-icon">🌡️</div>
+        <h4>Environment</h4>
+        <p>BME280 (T, RH, P) + SHT31 option for enhanced humidity accuracy.</p>
+      </div>
+      <div class="arch-block">
+        <div class="arch-icon">🧠</div>
+        <h4>ESP32 + ML</h4>
+        <p>TFLite quantised Random Forest, real-time PM inference, WiFi/MQTT.</p>
+      </div>
+    </div>
+
+    <div class="prose reveal">
+      <h3>Optical Geometry</h3>
+      <p>The three laser wavelengths span the visible spectrum, exploiting the wavelength-dependent nature of Mie scattering to encode particle size information. At <strong>450 nm</strong>, the shorter wavelength provides highest sensitivity to sub-micrometre particles. At <strong>650 nm</strong>, larger particles produce relatively stronger signals. The spectral ratios between channels yield <em>Ångström exponent</em> estimates that directly indicate the fine/coarse mode balance.</p>
+      <p>The three detection angles sample distinct regions of the scattering phase function. <strong>30°</strong> (near-forward) captures the diffraction-dominated lobe sensitive to larger particles. <strong>90°</strong> (side-scatter) is the standard OPC geometry, while <strong>60°</strong> provides the transition region. Angular ratios constrain the phase function shape, enabling improved size discrimination beyond what any single-angle sensor can achieve.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MIE PHYSICS ══════════════════════════════════════════ -->
+<section id="physics">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 03</p>
+      <h2 class="section-title">Mie Scattering Physics</h2>
+      <p class="section-desc">Exact electromagnetic scattering solutions for spherical aerosol particles, validated across two independent libraries (PyMieScatt, miepython) with agreement to ~10⁻¹⁵ relative error.</p>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/mie_efficiencies.png" alt="Mie scattering and extinction efficiencies vs particle diameter at three wavelengths">
+      <figcaption><strong>Figure 1.</strong> Mie scattering efficiency (Q<sub>sca</sub>), extinction efficiency (Q<sub>ext</sub>), and scattering cross-section (σ<sub>sca</sub>) as functions of particle diameter for the three laser wavelengths. The resonance structure in the Mie regime (x ≈ 1–17) carries information about particle size that multi-wavelength detection exploits.</figcaption>
+    </div>
+
+    <div class="figure-grid">
+      <div class="figure reveal">
+        <img src="images/phase_functions.png" alt="Angular scattering phase functions for different particle sizes">
+        <figcaption><strong>Figure 2.</strong> Scattering phase functions at λ = 532 nm for particle diameters spanning 0.2–5.0 µm. Vertical dashed lines mark the three detector angles (30°, 60°, 90°). The strong forward scattering lobe grows dramatically with particle size, validating the multi-angle detection strategy.</figcaption>
+      </div>
+      <div class="figure reveal">
+        <img src="images/angstrom_exponent.png" alt="Ångström exponent as function of particle diameter">
+        <figcaption><strong>Figure 3.</strong> Ångström exponent α (computed from the 450/650 nm scattering ratio) vs particle diameter. Fine-mode aerosols (α > 1.5) are clearly distinguished from coarse-mode (α < 0.5), demonstrating that multi-wavelength detection encodes particle size information orthogonal to total scattering intensity.</figcaption>
+      </div>
+    </div>
+
+    <div class="prose reveal">
+      <h3>Cross-Validation</h3>
+      <p>All Mie computations were cross-validated between PyMieScatt (v1.8) and miepython (v2.3). For ammonium sulfate particles (m = 1.53 + 0i) across diameters 0.5–2.0 µm, both Q<sub>ext</sub> and Q<sub>sca</sub> agree to within <em>10⁻¹⁴ – 10⁻¹⁶</em> relative error, confirming the numerical integrity of the simulation framework.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ AEROSOL MODELLING ════════════════════════════════════ -->
+<section id="aerosol">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 04</p>
+      <h2 class="section-title">Aerosol Size Distributions</h2>
+      <p class="section-desc">Multi-modal lognormal distributions representing five realistic ambient scenarios: urban, biomass burning, mineral dust, clean background, and mixed conditions.</p>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/size_distributions.png" alt="Aerosol number and volume size distributions for five scenarios">
+      <figcaption><strong>Figure 4.</strong> Number size distribution dN/dlog D (left) and volume size distribution dV/dlog D (right, proportional to mass) for five aerosol scenarios. The PM2.5 and PM10 size cuts are marked. Urban aerosol is dominated by fine accumulation mode particles, while dust is dominated by the coarse mode. The volume distribution reveals that coarse particles contribute disproportionately to PM10 mass.</figcaption>
+    </div>
+
+    <div class="data-table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Dominant Mode</th>
+            <th>D<sub>g</sub> (µm)</th>
+            <th>σ<sub>g</sub></th>
+            <th>PM2.5/PM10</th>
+            <th>Relevance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="highlight">Urban</td><td>Fine</td><td>0.15</td><td>1.8</td><td>~0.05</td><td>Traffic, cooking, industry</td></tr>
+          <tr><td class="highlight">Biomass</td><td>Fine</td><td>0.13</td><td>1.7</td><td>~0.40</td><td>Crop burning, wood fires</td></tr>
+          <tr><td class="highlight">Dust</td><td>Coarse</td><td>5.0</td><td>2.5</td><td>~0.02</td><td>Construction, wind erosion</td></tr>
+          <tr><td class="highlight">Clean</td><td>Accumulation</td><td>0.5</td><td>2.0</td><td>~0.64</td><td>Background, post-rain</td></tr>
+          <tr><td class="highlight">Mixed</td><td>Multi-modal</td><td>variable</td><td>—</td><td>~0.01</td><td>Real ambient conditions</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HYGROSCOPIC GROWTH ═══════════════════════════════════ -->
+<section id="humidity">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 05</p>
+      <h2 class="section-title">Hygroscopic Growth &amp; Humidity Compensation</h2>
+      <p class="section-desc">Humidity is the single largest source of error in low-cost PM sensors. The κ-Köhler model quantifies particle swelling and its impact on scattering signals, enabling ML-based correction.</p>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/hygroscopic_growth.png" alt="Hygroscopic growth factors, scattering enhancement, and bias correction">
+      <figcaption><strong>Figure 5.</strong> Left: hygroscopic growth factor g(RH) for four aerosol types. Centre: scattering enhancement f(RH) = σ<sub>wet</sub>/σ<sub>dry</sub> showing how humidity inflates sensor readings. Right: illustration of uncorrected sensor bias vs ML-corrected reading at constant true PM2.5 = 50 µg/m³. Sea salt grows by 1.76× at 80% RH, causing scattering enhancement of 3.3×. Black carbon, being hydrophobic, is unaffected.</figcaption>
+    </div>
+
+    <div class="metrics-row reveal">
+      <div class="metric-card">
+        <div class="value">1.46×</div>
+        <div class="label">(NH₄)₂SO₄ growth at 80% RH</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">3.3×</div>
+        <div class="label">Sea salt σ enhancement at 80% RH</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">κ = 0.53</div>
+        <div class="label">Ammonium sulfate hygroscopicity</div>
+      </div>
+      <div class="metric-card">
+        <div class="value">0.0</div>
+        <div class="label">Black carbon κ (hydrophobic)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SENSOR MODEL ═════════════════════════════════════════ -->
+<section id="sensor">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 06</p>
+      <h2 class="section-title">Sensor Electronics &amp; Signal Chain</h2>
+      <p class="section-desc">Full simulation of the analog front-end from photon collection through transimpedance amplification to 16-bit ADC digitisation, including four noise sources.</p>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/sensor_heatmap.png" alt="Sensor channel distributions, correlations, and 3λ×3θ signal heatmap">
+      <figcaption><strong>Figure 6.</strong> Left: box plots of log-voltage distributions across the 9 scattering channels, colour-coded by wavelength. Centre: Pearson correlation matrix showing high inter-channel correlation (typical for scattering-dominated signals). Right: mean scattering signal in the 3λ × 3θ grid — forward scattering (30°) dominates, blue wavelength shows strongest fine-particle response.</figcaption>
+    </div>
+
+    <div class="data-table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Noise Source</th>
+            <th>Model</th>
+            <th>Typical Level</th>
+            <th>Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="highlight">Shot Noise</td><td>√(2qI·BW)</td><td>~pA/√Hz</td><td>Fundamental limit at low concentrations</td></tr>
+          <tr><td class="highlight">Dark Current</td><td>BPW34: 2 nA</td><td>~20 mV offset</td><td>DC bias, removed by calibration</td></tr>
+          <tr><td class="highlight">Thermal</td><td>√(4kTBW/R<sub>f</sub>)</td><td>~µV RMS</td><td>Broadband floor from TIA resistor</td></tr>
+          <tr><td class="highlight">ADC Quantisation</td><td>±2 LSB RMS</td><td>~0.125 mV</td><td>16-bit ADS1115 resolution limit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ML RESULTS ═══════════════════════════════════════════ -->
+<section id="ml">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 07</p>
+      <h2 class="section-title">Machine Learning Results</h2>
+      <p class="section-desc">Three model architectures trained on physics-based synthetic data: Random Forest, XGBoost, and Neural Network. The 34-feature pipeline captures scattering physics, spectral ratios, angular ratios, and environmental conditions.</p>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/ml_results.png" alt="True vs predicted PM2.5 scatter plots for three models">
+      <figcaption><strong>Figure 7.</strong> True vs predicted PM2.5 scatter plots for Random Forest, XGBoost, and Neural Network. Green shaded region indicates ±20% accuracy band. Random Forest and XGBoost show similar performance, with the NN requiring more training data for convergence.</figcaption>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/model_dashboard.png" alt="Model comparison dashboard showing MAE and R² for PM2.5 and PM10">
+      <figcaption><strong>Figure 8.</strong> Model performance comparison dashboard for both PM2.5 and PM10 targets. MAE and R² values annotated on each bar.</figcaption>
+    </div>
+
+    <div class="figure-grid">
+      <div class="figure reveal">
+        <img src="images/feature_importance.png" alt="Feature importance ranking from Random Forest">
+        <figcaption><strong>Figure 9.</strong> Top 15 feature importances from Random Forest (PM2.5). Total scattering intensity dominates (~55%), followed by raw channel voltages and spectral/angular ratios. Features are colour-coded by category: blue = raw channels, pink = spectral ratios, orange = angular ratios, green = Ångström, red = aggregates, grey = environmental.</figcaption>
+      </div>
+      <div class="figure reveal">
+        <img src="images/ablation_study.png" alt="Ablation study showing feature group contributions">
+        <figcaption><strong>Figure 10.</strong> Ablation study: MAE change when each feature group is removed. Left panel shows percentage degradation; right panel shows absolute MAE. Every feature group contributes positively, with raw channels and spectral ratios providing the largest marginal improvements.</figcaption>
+      </div>
+    </div>
+
+    <div class="figure reveal">
+      <img src="images/humidity_analysis.png" alt="Humidity compensation analysis across RH bins">
+      <figcaption><strong>Figure 11.</strong> Humidity compensation analysis. Left: MAE comparison between baseline (single-channel linear regression) and ML-corrected model across RH bins. Right: improvement factor at each humidity level. The ML model provides consistent improvement across all conditions, with largest gains at high humidity where uncorrected sensors fail most severely.</figcaption>
+    </div>
+
+    <div class="prose reveal">
+      <h3>Key Findings</h3>
+      <p>The multi-wavelength, multi-angle architecture with ML calibration demonstrates clear advantages over conventional single-channel sensors. <strong>Total scattering intensity</strong> provides the dominant predictive signal (~55% importance), validating the fundamental physics. <strong>Spectral ratios</strong> encode particle size through wavelength-dependent scattering, providing orthogonal information. <strong>Environmental features</strong> (temperature, RH) enable humidity compensation that is critical for accurate field deployment.</p>
+      <p>With 5000+ training samples, the models achieve R² > 0.85 for PM2.5. The <em>ablation study</em> confirms that each feature group contributes positively, with no redundant dimensions. This validates the sensor's 9-channel + environment design as information-theoretically efficient.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TEAM ═════════════════════════════════════════════════ -->
+<section id="team">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Section 08</p>
+      <h2 class="section-title">Project Team</h2>
+      <p class="section-desc">B.Tech Major Project, Department of Physics, National Institute of Technology Hamirpur, Himachal Pradesh. Academic Year 2025–26.</p>
+    </div>
+
+    <div class="team-grid reveal">
+      <div class="team-card">
+        <div class="avatar">DG</div>
+        <div class="name">Dishant Gupta</div>
+        <div class="role">System Design, Simulation &amp; ML</div>
+        <div class="dept">B.Tech Physics, NIT Hamirpur<br>CTO, Unisole Empower</div>
+      </div>
+      <div class="team-card">
+        <div class="avatar">AV</div>
+        <div class="name">Akanksha Verma</div>
+        <div class="role">Optical Design &amp; Validation</div>
+        <div class="dept">B.Tech, NIT Hamirpur</div>
+      </div>
+      <div class="team-card">
+        <div class="avatar">D</div>
+        <div class="name">Devashish</div>
+        <div class="role">Electronics &amp; Firmware</div>
+        <div class="dept">B.Tech, NIT Hamirpur</div>
+      </div>
+      <div class="team-card">
+        <div class="avatar">AM</div>
+        <div class="name">Ajay Mokta</div>
+        <div class="role">Testing &amp; Deployment</div>
+        <div class="dept">B.Tech, NIT Hamirpur<br>CEO, Unisole Empower</div>
+      </div>
+    </div>
+
+    <div class="team-grid reveal" style="margin-top: 2rem;">
+      <div class="team-card" style="grid-column: 1 / -1; max-width: 400px; margin: 0 auto;">
+        <div class="avatar" style="background: linear-gradient(135deg, var(--amber), var(--laser-red));">AG</div>
+        <div class="name">Dr. Arvind K. Gathania</div>
+        <div class="role">Project Supervisor</div>
+        <div class="dept">Department of Physics<br>National Institute of Technology, Hamirpur</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">Mini-LIDAR Air Quality Sensor</div>
+    <p>Department of Physics &middot; National Institute of Technology, Hamirpur (H.P.) &middot; India</p>
+    <p style="margin-top: 0.8rem; font-size: 0.75rem; color: var(--text-dim);">
+      Simulation framework built with PyMieScatt, miepython, scikit-learn, XGBoost &middot;
+      <a href="https://github.com" target="_blank">Source Code</a>
+    </p>
+    <p style="margin-top: 1.5rem; font-size: 0.7rem; opacity: 0.5;">
+      &copy; 2025–26 Dishant Gupta &amp; Team. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<!-- ═══ LIGHTBOX ═════════════════════════════════════════════ -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════ -->
+<script>
+// ── Nav scroll state ──────────────────────────────────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// ── Active nav link on scroll ─────────────────────────────────
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+
+const observerNav = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => {
+        link.classList.toggle('active',
+          link.getAttribute('href') === '#' + entry.target.id
+        );
+      });
+    }
+  });
+}, { rootMargin: '-30% 0px -70% 0px' });
+
+sections.forEach(s => observerNav.observe(s));
+
+// ── Scroll reveal ─────────────────────────────────────────────
+const reveals = document.querySelectorAll('.reveal');
+const observerReveal = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+reveals.forEach(el => observerReveal.observe(el));
+
+// ── Lightbox ──────────────────────────────────────────────────
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+
+document.querySelectorAll('.figure img').forEach(img => {
+  img.addEventListener('click', () => {
+    lightboxImg.src = img.src;
+    lightboxImg.alt = img.alt;
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
+});
+
+function closeLightbox() {
+  lightbox.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// ── Close mobile nav on link click ────────────────────────────
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.nav-links').classList.remove('open');
+  });
+});
+</script>
+
+</body>
+</html>

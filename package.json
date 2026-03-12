@@ -1,0 +1,9 @@
+{
+  "name": "mini-lidar-research-site",
+  "version": "1.0.0",
+  "description": "Mini-LIDAR Air Quality Sensor — Research Project Website",
+  "private": true,
+  "scripts": {
+    "start": "npx serve public"
+  }
+}
