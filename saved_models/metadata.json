@@ -1,0 +1,87 @@
+{
+  "feature_names": [
+    "V_450nm_30deg",
+    "V_450nm_60deg",
+    "V_450nm_90deg",
+    "V_532nm_30deg",
+    "V_532nm_60deg",
+    "V_532nm_90deg",
+    "V_650nm_30deg",
+    "V_650nm_60deg",
+    "V_650nm_90deg",
+    "SR_450_650_30deg",
+    "SR_532_650_30deg",
+    "SR_450_532_30deg",
+    "SR_450_650_60deg",
+    "SR_532_650_60deg",
+    "SR_450_532_60deg",
+    "SR_450_650_90deg",
+    "SR_532_650_90deg",
+    "SR_450_532_90deg",
+    "AR_30_90_450nm",
+    "AR_60_90_450nm",
+    "AR_30_90_532nm",
+    "AR_60_90_532nm",
+    "AR_30_90_650nm",
+    "AR_60_90_650nm",
+    "AE_450_650_30deg",
+    "AE_450_650_60deg",
+    "AE_450_650_90deg",
+    "total_scattering",
+    "fine_fraction_proxy",
+    "fwd_side_ratio",
+    "temperature_C",
+    "rh_pct",
+    "dew_point_C",
+    "abs_humidity_gm3"
+  ],
+  "n_features": 34,
+  "n_train": 4000,
+  "n_test": 1000,
+  "models_available": [
+    "RandomForest_pm25",
+    "RandomForest_pm10",
+    "XGBoost_pm25",
+    "XGBoost_pm10",
+    "NeuralNetwork_pm25",
+    "NeuralNetwork_pm10"
+  ],
+  "results": {
+    "RandomForest": {
+      "pm25": {
+        "mae": 79.7168,
+        "rmse": 100.1776,
+        "r2": 0.5064
+      },
+      "pm10": {
+        "mae": 6883.251,
+        "rmse": 9216.4773,
+        "r2": 0.0276
+      }
+    },
+    "XGBoost": {
+      "pm25": {
+        "mae": 81.2461,
+        "rmse": 102.9859,
+        "r2": 0.4783
+      },
+      "pm10": {
+        "mae": 7134.2777,
+        "rmse": 9513.1987,
+        "r2": -0.036
+      }
+    },
+    "NeuralNetwork": {
+      "pm25": {
+        "mae": 80.8128,
+        "rmse": 100.9005,
+        "r2": 0.4992
+      },
+      "pm10": {
+        "mae": 6970.6731,
+        "rmse": 9395.2083,
+        "r2": -0.0105
+      }
+    }
+  }
+}
